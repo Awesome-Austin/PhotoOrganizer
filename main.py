@@ -23,13 +23,21 @@ MONTHS = {
 
 def organize_photos(folder_dir, output_dir=""):
     def _filename_date(file_name):
-        re_dates = re.compile(r'(Screenshot)?.*((19|20)\d{2})([0|1]\d)([0-3]\d).?([0-2]\d)([0-5]\d)([0-5]\d).*')
+        re_dates = re.compile(r'.*((19|20)\d{2})([0|1][0-2])([0-3]\d).?([0-2]\d)?([0-5]\d)?([0-5]\d)?.*')
         mo = re_dates.search(file_name)
         try:
             mg = mo.groups()
-            return datetime(int(mg[1]), int(mg[3]), int(mg[4]), int(mg[5]), int(mg[6]), int(mg[7]))
-
         except AttributeError:
+            return None
+
+        try:
+            return datetime(int(mg[0]), int(mg[2]), int(mg[3]), int(mg[4]), int(mg[5]), int(mg[6]))
+        except TypeError:
+            pass
+
+        try:
+            return datetime(int(mg[0]), int(mg[2]), int(mg[3]), 0, 0, 0)
+        except ValueError as e:
             return None
 
     def _photo_date(file_path):
@@ -51,6 +59,19 @@ def organize_photos(folder_dir, output_dir=""):
         exif_dict['Exif'] = {piexif.ExifIFD.DateTimeOriginal: new_date.strftime('%Y:%m:%d %H:%M:%S')}
         exif_bytes = piexif.dump(exif_dict)
         piexif.insert(exif_bytes, file_path)
+
+    def disneyland_resort_photo(file_name):
+        dlr_file_names = [
+            'dca_',
+            'dlpca_',
+            'pixiehallow',
+            'plazainn'
+            'wdw'
+        ]
+        for dlr_file_name in dlr_file_names:
+            if dlr_file_name in file_name.lower():
+                return True
+        return False
 
     if len(output_dir) == 0:
         output_dir = folder_dir
@@ -77,13 +98,24 @@ def organize_photos(folder_dir, output_dir=""):
                 new_dir = os.path.join(output_dir, 'gif')
                 new_filename = file_name
 
-            # elif 'gif' in file_extension:
-            #     new_dir = os.path.join(output_dir, 'gif')
-            #     new_filename = file_name
-            #
-            # elif 'png' in file_extension:
-            #     new_dir = os.path.join(output_dir, 'png')
-            #     new_filename = file_name
+            elif 'received' in file_name:
+                new_dir = os.path.join(output_dir, 'unknown', 'received')
+                new_filename = file_name
+
+            elif disneyland_resort_photo(file_name):
+
+                if photo_date is None:
+                    use_date = filename_date
+                else:
+                    use_date = photo_date
+
+                year = use_date.strftime('%Y')
+                month = int(use_date.strftime('%m'))
+                month = f'{month:0>2d} - {MONTHS[month]}'
+
+                new_dir = os.path.join(output_dir, year, month, 'Disneyland Resort Photopass')
+                photo_location = '_'.join(file_name.split("_")[:2]).upper()
+                new_filename = f"{use_date.strftime('%Y%m%d_%H%M%S')}_{photo_location}"
 
             elif filename_date is not None:
                 year = filename_date.strftime('%Y')
@@ -106,8 +138,8 @@ def organize_photos(folder_dir, output_dir=""):
                         funcs[file_extension[1:]](full_path, filename_date)
 
                     except KeyError:
-                        new_dir = os.path.join(output_dir, 'unknown', file_extension[1:])
-                        new_filename = file_name
+                        new_dir = os.path.join(output_dir, file_extension[1:], year, month)
+                        # new_filename = file_name
 
             elif photo_date is not None:
                 year = photo_date.strftime('%Y')
@@ -134,9 +166,26 @@ def organize_photos(folder_dir, output_dir=""):
             os.rename(full_path, new_path)
 
         else:
-            if len(os.listdir(folder_name)) == 0:
+            try:
                 os.rmdir(folder_name)
+                print(f'Removed Empty Folder:\n\t{folder_name}\n')
+            except OSError as e:
+                if e.args[1] == 'The directory is not empty':
+                    pass
+                else:
+                    raise e
+
+    else:
+        for folder_name, subfolders, file_names in os.walk(folder_dir):
+            try:
+                os.rmdir(folder_name)
+                print(f'Removed Empty Folder:\n\t{folder_name}\n')
+            except OSError as e:
+                if e.args[1] == 'The directory is not empty':
+                    pass
+                else:
+                    raise e
 
 
 if __name__ == '__main__':
-    organize_photos(r'D:\temp', r'D:\Pictures')
+    organize_photos(r'F:\Temp_1\Pictures', r"F:\Pictures")
