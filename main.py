@@ -4,6 +4,7 @@ import exifread
 import piexif
 from datetime import datetime
 from pathlib import Path
+from piexif._exceptions import InvalidImageDataError
 
 MONTHS = {
     1: 'January',
@@ -20,10 +21,15 @@ MONTHS = {
     12: 'December'
 }
 
+DELETE_THESE_EXTENSIONS = (
+    'json',
+    'ini',
+    'db'
+)
 
 def organize_photos(folder_dir, output_dir=""):
     def _filename_date(file_name):
-        re_dates = re.compile(r'.*((19|20)\d{2})([0|1][0-2])([0-3]\d).?([0-2]\d)?([0-5]\d)?([0-5]\d)?.*')
+        re_dates = re.compile(r'.*((19|20)\d{2})([0|1]\d)([0-3]\d).?([0-2]\d)?([0-5]\d)?([0-5]\d)?.*')
         mo = re_dates.search(file_name)
         try:
             mg = mo.groups()
@@ -86,7 +92,12 @@ def organize_photos(folder_dir, output_dir=""):
             filename_date = _filename_date(file_name)
             photo_date = _photo_date(full_path)
 
-            if "screenshot" in file_name:
+            if file_extension[1:] in DELETE_THESE_EXTENSIONS:
+                os.remove(full_path)
+                print(f'Deleted file:\n\t{full_path}\n')
+                continue
+
+            elif "screenshot" in file_name:
                 new_dir = os.path.join(output_dir, 'screenshots')
                 new_filename = file_name
 
@@ -99,7 +110,7 @@ def organize_photos(folder_dir, output_dir=""):
                 new_filename = file_name
 
             elif 'received' in file_name:
-                new_dir = os.path.join(output_dir, 'unknown', 'received')
+                new_dir = os.path.join(output_dir, 'received')
                 new_filename = file_name
 
             elif disneyland_resort_photo(file_name):
@@ -122,8 +133,15 @@ def organize_photos(folder_dir, output_dir=""):
                 month = int(filename_date.strftime('%m'))
                 month = f'{month:0>2d} - {MONTHS[month]}'
 
-                new_dir = os.path.join(output_dir, year, month)
-                new_filename = filename_date.strftime('%Y%m%d_%H%M%S')
+                new_dir = os.path.join(output_dir, year)
+                if 'school photo' in file_name:
+                    new_filename = f'{year} School Photo'
+
+                else:
+                    new_filename = filename_date.strftime('%Y%m%d_%H%M%S')
+                    new_dir = os.path.join(new_dir, month)
+
+
 
                 try:
                     dates_dont_match = photo_date.date() != filename_date.date()
@@ -133,12 +151,18 @@ def organize_photos(folder_dir, output_dir=""):
                 if dates_dont_match:
                     funcs = {
                         'jpg': _update_jpeg_date,
+                        'jpeg': _update_jpeg_date,
                     }
                     try:
                         funcs[file_extension[1:]](full_path, filename_date)
 
                     except KeyError:
                         new_dir = os.path.join(output_dir, file_extension[1:], year, month)
+                        # new_filename = file_name
+
+                    except InvalidImageDataError:
+                        # possible corrupted image
+                        new_dir = os.path.join(output_dir, 'Possible Corrupted files', year, month)
                         # new_filename = file_name
 
             elif photo_date is not None:
@@ -153,9 +177,14 @@ def organize_photos(folder_dir, output_dir=""):
                 new_dir = os.path.join(output_dir, 'unknown', os.path.basename(folder_name))
                 new_filename = file_name
 
+            if not os.path.exists(full_path):
+                continue
+
+
             # Move File
             Path(new_dir).mkdir(parents=True, exist_ok=True)
             new_path = os.path.join(new_dir, f'{new_filename}{file_extension}')
+
             i = 1
             while os.path.exists(new_path):
                 i += 1
@@ -171,6 +200,8 @@ def organize_photos(folder_dir, output_dir=""):
                 print(f'Removed Empty Folder:\n\t{folder_name}\n')
             except OSError as e:
                 if e.args[1] == 'The directory is not empty':
+                    pass
+                elif e.args[1] == 'Access is denied':
                     pass
                 else:
                     raise e
@@ -188,4 +219,6 @@ def organize_photos(folder_dir, output_dir=""):
 
 
 if __name__ == '__main__':
-    organize_photos(r'F:\Temp_1\Pictures', r"F:\Pictures")
+    current_folder = r'F:\Temp_3\Photos'
+    output_folder = r"F:\Pictures"
+    organize_photos(current_folder, output_folder)
