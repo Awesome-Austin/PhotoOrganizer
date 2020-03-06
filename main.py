@@ -29,8 +29,10 @@ DELETE_THESE_EXTENSIONS = (
 
 def organize_photos(folder_dir, output_dir=""):
     def _filename_date(file_name):
-        re_dates = re.compile(r'.*((19|20)\d{2})([0|1]\d)([0-3]\d).?([0-2]\d)?([0-5]\d)?([0-5]\d)?.*')
+        re_dates = re.compile(r'.*((19|20)\d{2})([0|1]\d)([0-3]\d)\D?([0-2]\d)?([0-5]\d)?([0-5]\d)?.*')
         mo = re_dates.search(file_name)
+
+
         try:
             mg = mo.groups()
         except AttributeError:
@@ -219,6 +221,6 @@ def organize_photos(folder_dir, output_dir=""):
 
 
 if __name__ == '__main__':
-    current_folder = r'F:\Temp_3\Photos'
+    current_folder = r'F:\Pictures\zip\2019\05 - May\Takeout\Google Photos\2011-01-27'
     output_folder = r"F:\Pictures"
     organize_photos(current_folder, output_folder)
