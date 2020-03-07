@@ -221,6 +221,6 @@ def organize_photos(folder_dir, output_dir=""):
 
 
 if __name__ == '__main__':
-    current_folder = r'F:\Pictures\zip\2019\05 - May\Takeout\Google Photos\2011-01-27'
+    current_folder = r'F:\Pictures\zip'
     output_folder = r"F:\Pictures"
     organize_photos(current_folder, output_folder)
