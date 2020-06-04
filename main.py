@@ -154,6 +154,7 @@ def organize_photos(folder_dir, output_dir=""):
                     funcs = {
                         'jpg': _update_jpeg_date,
                         'jpeg': _update_jpeg_date,
+                        # 'gif': _update_jpeg_date,
                     }
                     try:
                         funcs[file_extension[1:]](full_path, filename_date)
@@ -190,7 +191,7 @@ def organize_photos(folder_dir, output_dir=""):
             i = 1
             while os.path.exists(new_path):
                 i += 1
-                new_path = os.path.join(new_dir, f'{new_filename}_{i:0>2d}{file_extension}')
+                new_path = os.path.join(new_dir, f'{new_filename}_{i:0>3d}{file_extension}')
 
             print(f'{full_path:<80}\t->\t{new_path}')
             assert not os.path.exists(new_path)
@@ -221,6 +222,6 @@ def organize_photos(folder_dir, output_dir=""):
 
 
 if __name__ == '__main__':
-    current_folder = r'F:\Pictures\zip'
+    current_folder = r'F:\Pictures\unknown\Scanned'
     output_folder = r"F:\Pictures"
     organize_photos(current_folder, output_folder)
